@@ -27,6 +27,9 @@ model User {
 
   otpCodes         OtpCode[]
   passwordResets   PasswordResetToken[]
+  courseProgress   UserCourseProgress[]
+  lessonProgress   UserLessonProgress[]
+  assignments      UserAssignment[]
 }
 
 model OtpCode {
@@ -60,5 +63,143 @@ enum OtpPurpose {
   REGISTER
   LOGIN
   PASSWORD_RESET
+}
+
+model Course {
+  id          String   @id @default(cuid())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  title       String
+  description String?   @db.Text
+  imageUrl    String?
+  order       Int      @default(0)
+  isActive    Boolean  @default(true)
+
+  lessons     Lesson[]
+  progress    UserCourseProgress[]
+}
+
+model Lesson {
+  id          String   @id @default(cuid())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  courseId    String
+
+  title       String
+  description String?   @db.Text
+  type        LessonType
+  order       Int      @default(0)
+  isActive    Boolean  @default(true)
+
+  content     LessonContent?
+  assignment  Assignment?
+  progress    UserLessonProgress[]
+}
+
+enum LessonType {
+  THEORY
+  VIDEO
+  ASSIGNMENT
+  MIXED
+}
+
+model LessonContent {
+  id          String   @id @default(cuid())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  lesson      Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  lessonId    String   @unique
+
+  content     String   @db.Text // HTML или Markdown контент
+  videoUrl    String?
+  images      String[] // массив URL изображений
+  metadata    Json?    // дополнительные данные (JSON)
+}
+
+model Assignment {
+  id          String   @id @default(cuid())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  lesson      Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  lessonId    String   @unique
+
+  title       String
+  description String?   @db.Text
+  type        AssignmentType
+  maxScore    Int      @default(100)
+  content     Json?    // структура задания (вопросы, варианты ответов и т.д.)
+  isActive    Boolean  @default(true)
+
+  userAnswers UserAssignment[]
+}
+
+enum AssignmentType {
+  INTERACTIVE
+  QUIZ
+  TEST
+  PRACTICAL
+}
+
+model UserCourseProgress {
+  id          String   @id @default(cuid())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String
+
+  course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  courseId    String
+
+  progressPercent Int  @default(0) // 0-100
+  completedAt     DateTime?
+
+  @@unique([userId, courseId])
+  @@index([userId])
+  @@index([courseId])
+}
+
+model UserLessonProgress {
+  id          String   @id @default(cuid())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String
+
+  lesson      Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  lessonId    String
+
+  progressPercent Int  @default(0) // 0-100
+  completedAt     DateTime?
+
+  @@unique([userId, lessonId])
+  @@index([userId])
+  @@index([lessonId])
+}
+
+model UserAssignment {
+  id          String   @id @default(cuid())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String
+
+  assignment  Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  assignmentId String
+
+  score       Int      @default(0)
+  answers     Json?    // ответы пользователя
+  completedAt DateTime?
+
+  @@unique([userId, assignmentId])
+  @@index([userId])
+  @@index([assignmentId])
 }
 

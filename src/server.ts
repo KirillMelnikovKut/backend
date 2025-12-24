@@ -3,6 +3,9 @@ import express from 'express';
 import cors from 'cors';
 import swaggerUi from 'swagger-ui-express';
 import authRouter from './routes/auth';
+import coursesRouter from './routes/courses';
+import adminRouter from './routes/admin';
+import profileRouter from './routes/profile';
 import { env } from './config/env';
 import { swaggerSpec } from './config/swagger';
 
@@ -16,6 +19,9 @@ app.get('/health', (_req, res) => {
 });
 
 app.use('/auth', authRouter);
+app.use('/courses', coursesRouter);
+app.use('/admin', adminRouter);
+app.use('/profile', profileRouter);
 
 app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
